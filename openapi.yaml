@@ -1,0 +1,1655 @@
+openapi: 3.1.0
+info:
+  title: OpenAPI документация для фулфилмент сервиса
+  version: v1
+servers:
+- url: http://localhost:8080
+  description: Url сервера
+tags:
+- name: Shipment API
+  description: API для управления отгрузками
+- name: Account API
+  description: API для управления аккаунтом
+- name: Product API
+  description: API для управления товарами
+- name: Fulfillment API
+  description: API для управления фулфилментами
+paths:
+  /api/v1/product:
+    get:
+      tags:
+      - Product API
+      summary: Поиск товаров
+      description: Возвращает список товаров пользователя с фильтром и пагинацией
+      operationId: getAllProducts
+      parameters:
+      - name: search
+        in: query
+        description: "Строка для поиска товаров по началу наименования, артикула и\
+          ли баркода"
+        required: false
+        schema:
+          type: string
+        example: кюлоты
+      - name: page
+        in: query
+        description: Номер страницы (начинается с 0)
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+        example: 0
+      - name: limit
+        in: query
+        description: Количество элементов на странице
+        required: false
+        schema:
+          type: integer
+          maximum: 30
+          minimum: 1
+        example: 5
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllProductsResponse"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T19:34:23.56Z
+                status: 400
+                error: Bad request
+                message: The limit cannot exceed 30
+                path: /api/v1/product
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/product
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't get products
+                path: /api/v1/product
+      security:
+      - TelegramAuth: []
+    put:
+      tags:
+      - Product API
+      summary: Обновление информации о товарах
+      description: "Обновляет информацию о товарах пользователя в базе данных, дел\
+        ая запрос к api Wildberries"
+      operationId: updateProductInformation
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateResponse"
+        "400":
+          description: Недействительный api ключ Wildberries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:04:22.00Z
+                status: 400
+                error: "Wildberries API Error: unauthorized"
+                message: "token problem; token is malformed: token contains an invalid\
+                  \ number of segments"
+                path: /api/v1/product
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/product
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't update product information
+                path: /api/v1/product
+        "502":
+          description: Ошибка при работе с api Wildberries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 502
+                error: "Wildberries API Error: method not allowed"
+                message: allowed methods are listed in the Allow header (POST)
+                path: /api/v1/product
+      security:
+      - TelegramAuth: []
+  /api/v1/shipment:
+    get:
+      tags:
+      - Shipment API
+      summary: Поиск отгрузок
+      description: Возвращает список отгрузок пользователя с фильтром и пагинацией
+        в отсортированном по дате виде (сначала новые)
+      operationId: getAllShipments
+      parameters:
+      - name: search
+        in: query
+        description: "Строка для поиска отгрузок по началу наименования, артикула\
+          \ или баркода товара"
+        required: false
+        schema:
+          type: string
+        example: костюм
+      - name: status
+        in: query
+        description: "Строка для поиска отгрузок по статусу: Принято, В работе, От\
+          гружено"
+        required: false
+        schema:
+          type: string
+        example: костюм
+      - name: page
+        in: query
+        description: Номер страницы (начинается с 0)
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+        example: 0
+      - name: limit
+        in: query
+        description: Количество элементов на странице
+        required: false
+        schema:
+          type: integer
+          maximum: 30
+          minimum: 1
+        example: 5
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllShipmentsResponse"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T19:34:23.56Z
+                status: 400
+                error: Bad request
+                message: The limit cannot exceed 30
+                path: /api/v1/shipment
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/shipment
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't get shipments
+                path: /api/v1/shipment
+      security:
+      - TelegramAuth: []
+    post:
+      tags:
+      - Shipment API
+      summary: Создание отгрузки
+      description: "Сохраняет новую отгрузку, привязанную к фулфилменту, и отправл\
+        яет данные в гугл таблицу"
+      operationId: createShipment
+      requestBody:
+        description: Данные для создания отгрузки
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShipmentRequest"
+        required: true
+      responses:
+        "201":
+          description: Успешное сохранение
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShipmentResponse"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/shipment
+        "403":
+          description: Доступ к фулфилменту запрещен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T21:11:38.42Z
+                status: 403
+                error: Access denied
+                message: There is no access to this fulfillment
+                path: /api/v1/shipment
+        "404":
+          description: Фулфилмент не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T21:12:21.40Z
+                status: 404
+                error: No data found
+                message: "Fulfillment with id: 1000000 not found"
+                path: /api/v1/shipment
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't save shipment
+                path: /api/v1/shipment
+        "502":
+          description: Ошибка при работе с api Google Sheets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T11:13:43.69Z
+                status: 502
+                error: Google Sheets API error
+                message: "Couldn't export to Google Sheets, so the shipment was not\
+                  \ saved"
+                path: /api/v1/shipment
+      security:
+      - TelegramAuth: []
+  /api/v1/fulfillment:
+    get:
+      tags:
+      - Fulfillment API
+      summary: Поиск фулфилментов
+      description: Возвращает список фулфилментов пользователя с фильтром и пагинацией
+        в отсортированном по дате виде (сначала новые)
+      operationId: getAllFulfillments
+      parameters:
+      - name: search
+        in: query
+        description: "Строка для поиска фулфилментов по началу наименования, артик\
+          ула или баркода товара"
+        required: false
+        schema:
+          type: string
+        example: костюм
+      - name: page
+        in: query
+        description: Номер страницы (начинается с 0)
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+        example: 0
+      - name: limit
+        in: query
+        description: Количество элементов на странице
+        required: false
+        schema:
+          type: integer
+          maximum: 30
+          minimum: 1
+        example: 5
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllFulfillmentsResponse"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T19:34:23.56Z
+                status: 400
+                error: Bad request
+                message: The limit cannot exceed 30
+                path: /api/v1/fulfillment
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/fulfillment
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't get fulfillments
+                path: /api/v1/fulfillment
+      security:
+      - TelegramAuth: []
+    post:
+      tags:
+      - Fulfillment API
+      summary: Создание фулфилмента
+      description: Сохраняет новый фулфилмент и отправляет данные в гугл таблицу
+      operationId: createFulfillment
+      requestBody:
+        description: Данные для создания фулфилмента
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FulfillmentRequest"
+        required: true
+      responses:
+        "201":
+          description: Успешное сохранение
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FulfillmentResponse"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T18:42:51.70Z
+                status: 400
+                error: Validation error
+                message: Incorrect data was entered
+                path: /api/v1/fulfillment
+                details:
+                  quantity: The number must be greater than 0
+                  productId: The product id cannot be empty
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/fulfillment
+        "403":
+          description: Доступ к товару запрещен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T18:50:50.54Z
+                status: 403
+                error: Access denied
+                message: There is no access to this product
+                path: /api/v1/fulfillment
+        "404":
+          description: Товар не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T18:48:20.03Z
+                status: 404
+                error: No data found
+                message: "Product with id: 100152101 not found"
+                path: /api/v1/fulfillment
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't save fulfillment
+                path: /api/v1/fulfillment
+        "502":
+          description: Ошибка при работе с api Google Sheets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T11:13:43.69Z
+                status: 502
+                error: Google Sheets API error
+                message: "Couldn't export to Google Sheets, so the fulfillment was\
+                  \ not saved"
+                path: /api/v1/fulfillment
+      security:
+      - TelegramAuth: []
+  /api/v1/account/register:
+    post:
+      tags:
+      - Account API
+      summary: Регистрация нового пользователя
+      description: |-
+        Сохраняет нового пользователя и информацию о товарах, полученную от Wildberries.
+        Если api ключ недействителен, пользователь не будет зарегистрирован
+      operationId: register
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: Данные для регистрации
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegistrationRequest"
+        required: true
+      responses:
+        "201":
+          description: Успешное сохранение
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        "400":
+          description: "Некорректный запрос, в том числе недействительный api ключ\
+            \ Wildberries"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:04:22.00Z
+                status: 400
+                error: "Wildberries API Error: unauthorized"
+                message: "token problem; token is malformed: token contains an invalid\
+                  \ number of segments"
+                path: /api/v1/account/register
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/account/register
+        "409":
+          description: "Пользователь с таким именем, email, api ключом или телегра\
+            ммом уже существует"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:16:24.64Z
+                status: 409
+                error: Resource conflict
+                message: Account with this wb api key already exists
+                path: /api/v1/account/register
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't save account
+                path: /api/v1/account/register
+        "502":
+          description: Ошибка при работе с api Wildberries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 502
+                error: "Wildberries API Error: method not allowed"
+                message: allowed methods are listed in the Allow header (POST)
+                path: /api/v1/account/register
+      security:
+      - TelegramAuth: []
+  /api/v1/shipment/{shipmentId}/status:
+    patch:
+      tags:
+      - Shipment API
+      summary: Обновление статуса отгрузки
+      description: Обновляет статус отгрузки. Запрос отправляет гугл таблица
+      operationId: changeStatus
+      parameters:
+      - name: shipmentId
+        in: path
+        description: Id отгрузки
+        required: true
+        schema:
+          type: integer
+          format: int64
+          example: 10006115
+      requestBody:
+        description: Данные для смены статуса
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeShipmentStatusRequest"
+        required: true
+      responses:
+        "200":
+          description: Успешное обновление
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateResponse"
+              example:
+                timestamp: 2025-07-28T21:45:09.57Z
+                message: "Successful status update on: В работе"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T21:46:54.02Z
+                status: 400
+                error: Validation error
+                message: Incorrect data was entered
+                path: /api/v1/shipment/10000015/status
+                details:
+                  status: The status cannot be empty
+        "401":
+          description: Не аутентифицирован
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T21:49:06.819+00:00
+                status: 401
+                error: Unauthorized
+                path: /api/v1/shipment/10000015/status
+        "404":
+          description: Отгрузка для обновления статуса не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:04:22.00Z
+                status: 404
+                error: No data found
+                message: "Shipment with id: 10000015 not found"
+                path: /api/v1/shipment/10000015/status
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't change the shipment status
+                path: /api/v1/shipment/10000015/status
+      security:
+      - ApiSecretAuth: []
+  /api/v1/account/wb-api-key:
+    get:
+      tags:
+      - Account API
+      summary: Получение api ключа пользователя
+      description: Возвращает api ключ пользователя по telegram id из initData
+      operationId: getWbApiKey
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KeyResponse"
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/account/wb-api-key
+        "404":
+          description: Api ключ не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:04:22.00Z
+                status: 404
+                error: No data found
+                message: Wb api key was not found for this account
+                path: /api/v1/account/wb-api-key
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't get wb api key
+                path: /api/v1/account/wb-api-key
+      security:
+      - TelegramAuth: []
+    patch:
+      tags:
+      - Account API
+      summary: Обновление api ключа пользователя
+      description: Обновляет api ключ пользователя. Корректность нового ключа не проверяется
+      operationId: changeWbApiKey
+      requestBody:
+        description: Новое значение ключа
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeKeyRequest"
+        required: true
+      responses:
+        "200":
+          description: Успешное обновление
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangeKeyResponse"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T14:33:51.19Z
+                status: 400
+                error: Validation error
+                message: Incorrect data was entered
+                path: /api/v1/account/wb-api-key
+                details:
+                  wbApiKey: The wb api key cannot be empty
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/account/wb-api-key
+        "404":
+          description: Аккаунт для обновления api ключа не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:04:22.00Z
+                status: 404
+                error: No data found
+                message: Account not found
+                path: /api/v1/account/wb-api-key
+        "409":
+          description: Пользователь с таким api ключом уже существует
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T14:30:23.97Z
+                status: 409
+                error: Resource conflict
+                message: "It is not possible to save this wb api key, it already exists\
+                  \ in the database"
+                path: /api/v1/account/wb-api-key
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't change the wb api key
+                path: /api/v1/account/wb-api-key
+      security:
+      - TelegramAuth: []
+  /api/v1/shipment/{shipmentId}:
+    get:
+      tags:
+      - Shipment API
+      summary: Получение отгрузки
+      description: Возвращает информацию об отгрузки
+      operationId: getShipment
+      parameters:
+      - name: shipmentId
+        in: path
+        description: Id отгрузки
+        required: true
+        schema:
+          type: integer
+          format: int64
+          example: 10006115
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShipmentResponse"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T19:18:03.118+00:00
+                status: 400
+                error: Bad Request
+                path: /api/v1/shipment/abcd
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/shipment/10000005
+        "403":
+          description: Доступ к отгрузке запрещен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T19:21:10.74Z
+                status: 403
+                error: Access denied
+                message: There is no access to this shipment
+                path: /api/v1/fulfillment/10000005
+        "404":
+          description: Отгрузка не найдена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T19:21:45.21Z
+                status: 404
+                error: No data found
+                message: "Shipment with id: 100000 not found"
+                path: /api/v1/shipment/100000
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't get shipment
+                path: /api/v1/shipment/10000005
+      security:
+      - TelegramAuth: []
+  /api/v1/shipment/warehouses:
+    get:
+      tags:
+      - Shipment API
+      summary: Получение складов продавца
+      description: "Возвращает список складов продавца, делая запрос к api Wildberries"
+      operationId: getWarehouses
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WarehouseResponse"
+        "400":
+          description: Недействительный api ключ Wildberries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:04:22.00Z
+                status: 400
+                error: "Wildberries API Error: unauthorized"
+                message: "token problem; token is malformed: token contains an invalid\
+                  \ number of segments"
+                path: /api/v1/shipment/warehouses
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/shipment/warehouses
+        "502":
+          description: Ошибка при работе с api Wildberries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T21:07:26.39Z
+                status: 502
+                error: Wildberries API Error
+                message: Incorrect required body
+                path: /api/v1/shipment/warehouses
+      security:
+      - TelegramAuth: []
+  /api/v1/product/{productId}:
+    get:
+      tags:
+      - Product API
+      summary: Получение товара
+      description: Возвращает информацию о товаре пользователя
+      operationId: getProduct
+      parameters:
+      - name: productId
+        in: path
+        description: Id товара
+        required: true
+        schema:
+          type: integer
+          format: int64
+          example: 10000420
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllProductsResponse"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T20:34:31.029+00:00
+                status: 400
+                error: Bad Request
+                path: /api/v1/product/abcd
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/product/10000420
+        "403":
+          description: Доступ к товару запрещен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T20:36:51.87Z
+                status: 403
+                error: Access denied
+                message: There is no access to this product
+                path: /api/v1/product/10016160
+        "404":
+          description: Товар не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T20:36:07.95Z
+                status: 404
+                error: No data found
+                message: "Product with id: 1000000 not found"
+                path: /api/v1/product/1000000
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't get product
+                path: /api/v1/product/10000005
+      security:
+      - TelegramAuth: []
+  /api/v1/fulfillment/{fulfillmentId}:
+    get:
+      tags:
+      - Fulfillment API
+      summary: Получение фулфилмента
+      description: Возвращает информацию о фулфилменте
+      operationId: getFulfillment
+      parameters:
+      - name: fulfillmentId
+        in: path
+        description: Id фулфилмента
+        required: true
+        schema:
+          type: integer
+          format: int64
+          example: 10000005
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FulfillmentResponse"
+        "400":
+          description: Некорректный запрос
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T19:18:03.118+00:00
+                status: 400
+                error: Bad Request
+                path: /api/v1/fulfillment/abcd
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/fulfillment/10000005
+        "403":
+          description: Доступ к фулфилменту запрещен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T19:21:10.74Z
+                status: 403
+                error: Access denied
+                message: There is no access to this fulfillment
+                path: /api/v1/fulfillment/10000005
+        "404":
+          description: Фулфилмент не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T19:21:45.21Z
+                status: 404
+                error: No data found
+                message: "Fulfillment with id: 100000 not found"
+                path: /api/v1/fulfillment/100000
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't get fulfillment
+                path: /api/v1/fulfillment/10000005
+      security:
+      - TelegramAuth: []
+  /api/v1/account:
+    get:
+      tags:
+      - Account API
+      summary: Получение информации о пользователе
+      description: Возвращает информацию о пользователе по telegram id из initData
+      operationId: getAccount
+      responses:
+        "200":
+          description: Успешно
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/account
+        "404":
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:04:22.00Z
+                status: 404
+                error: No data found
+                message: Account not found
+                path: /api/v1/account
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't get account data
+                path: /api/v1/account
+      security:
+      - TelegramAuth: []
+    delete:
+      tags:
+      - Account API
+      summary: Удаление пользователя
+      description: "Безвозвратно удаляет всю информацию, связанную с пользователем\
+        , по telegram id из initData"
+      operationId: deleteAccount
+      responses:
+        "204":
+          description: Успешное удаление
+          content:
+            '*/*':
+              schema:
+                type: string
+        "401":
+          description: Пользователь не аутентифицирован через telegram
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:28:24.68Z
+                status: 401
+                error: Telegram authentication failed
+                message: Init data expired. Log in again via Telegram
+                path: /api/v1/account
+        "404":
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:04:22.00Z
+                status: 404
+                error: No data found
+                message: Account to delete was not found
+                path: /api/v1/account
+        "500":
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppErrorResponse"
+              example:
+                timestamp: 2025-07-28T13:22:31.00Z
+                status: 500
+                error: Database error
+                message: Couldn't delete account
+                path: /api/v1/account
+      security:
+      - TelegramAuth: []
+components:
+  schemas:
+    UpdateResponse:
+      type: object
+      description: Ответ на обновление
+      properties:
+        timestamp:
+          type: string
+          description: Дата и время обновления
+          example: 2025-07-28T20:43:27.13Z
+        message:
+          type: string
+          description: Сообщение об успехе
+          example: Successfully updated the products
+    AppErrorResponse:
+      type: object
+      description: Стандартный ответ ошибки
+      properties:
+        timestamp:
+          type: string
+          description: "Дата и время, когда произошла ошибка"
+          example: 2025-07-28T11:51:39.39Z
+        status:
+          type: integer
+          format: int32
+          description: Статусный код HTTP
+          example: 400
+        error:
+          type: string
+          description: Заголовок ошибки
+          example: Validation error
+        message:
+          type: string
+          description: Описание ошибки
+          example: Incorrect data was entered
+        path:
+          type: string
+          description: "Путь запроса, где произошла ошибка"
+          example: /api/v1/shipment
+        details:
+          type: object
+          additionalProperties:
+            type: string
+          description: Дополнительные сведения при ошибках валидации
+          example:
+            quantity: The number must be greater than 0
+            warehouseId: The warehouse id cannot be empty
+            warehouseName: The warehouse name cannot be empty
+    ShipmentResponse:
+      type: object
+      description: Ответ с информацией об отгрузке
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Id отгрузки
+          example: 10006115
+        date:
+          type: string
+          description: Дата и время создания отгрузки
+          example: 2025-07-28T21:17:17.80Z
+        quantity:
+          type: integer
+          format: int32
+          description: Количество товара
+          example: 50
+        warehouseId:
+          type: integer
+          format: int64
+          description: Id склада продавца на Wildberries
+          example: 751703
+        warehouseName:
+          type: string
+          description: Название склада продавца на Wildberries
+          example: Казань
+        status:
+          type: string
+          description: Статус отгрузки (при создании равен null)
+          example: Отгружено
+        fulfillmentId:
+          type: integer
+          format: int64
+          description: Id фулфилмента
+          example: 10006115
+        title:
+          type: string
+          description: Наименование товара
+          example: Костюм шорты рубашка летний
+        barcode:
+          type: string
+          description: Баркод товара
+          example: 2037991665923
+        article:
+          type: string
+          description: Артикул товара
+          example: костюм с шортами 850 бежевый
+        size:
+          type: string
+          description: Размер товара
+          example: L
+        color:
+          type: string
+          description: Цвет товара
+          example: бежевый
+    ShipmentRequest:
+      type: object
+      description: Запрос на создание отгрузки
+      properties:
+        quantity:
+          type: integer
+          format: int32
+          description: Количество товара
+          example: 50
+        warehouseId:
+          type: integer
+          format: int64
+          description: Id склада продавца на Wildberries
+          example: 751703
+          minimum: 0
+        warehouseName:
+          type: string
+          description: Название склада продавца на Wildberries
+          example: Казань
+          maxLength: 255
+          minLength: 1
+        fulfillmentId:
+          type: integer
+          format: int64
+          description: Id фулфилмента
+          example: 10006115
+          minimum: 0
+      required:
+      - fulfillmentId
+      - quantity
+      - warehouseId
+      - warehouseName
+    FulfillmentResponse:
+      type: object
+      description: Ответ с информацией о фулфилменте
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Id фулфилмента
+          example: 10006115
+        date:
+          type: string
+          description: Дата и время создания фулфилмента
+          example: 2025-07-28T19:08:58.22Z
+        title:
+          type: string
+          description: Наименование товара
+          example: Костюм шорты рубашка летний
+        barcode:
+          type: string
+          description: Баркод товара
+          example: 2037991665923
+        article:
+          type: string
+          description: Артикул товара
+          example: костюм с шортами 850 бежевый
+        size:
+          type: string
+          description: Размер товара
+          example: L
+        color:
+          type: string
+          description: Цвет товара
+          example: бежевый
+        photoUrl:
+          type: string
+          description: Ссылка на первое фото товара на Wildberries
+          example: https://basket-11.wbbasket.ru/vol1647/part164710/164710105/images/big/1.webp
+        quantity:
+          type: integer
+          format: int32
+          description: Количество товара
+          example: 200
+        taskDescription:
+          type: string
+          description: Техническое задание
+          example: "Проверить на брак, упаковать в пупырчатую пленку"
+    FulfillmentRequest:
+      type: object
+      description: Запрос на создание фулфилмента
+      properties:
+        productId:
+          type: integer
+          format: int64
+          description: id товара
+          example: 10000330
+          minimum: 0
+        quantity:
+          type: integer
+          format: int32
+          description: Количество
+          example: 200
+        taskDescription:
+          type: string
+          description: Техническое задание
+          example: "Проверить на брак, упаковать в пупырчатую пленку"
+          minLength: 1
+      required:
+      - productId
+      - quantity
+      - taskDescription
+    AccountResponse:
+      type: object
+      description: Ответ с информацией о пользователе
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: id пользователя
+          example: 100050
+        name:
+          type: string
+          description: Имя пользователя
+          example: Anna
+        phone:
+          type: string
+          description: Номер телефона пользователя
+          example: "+79123456789"
+        email:
+          type: string
+          description: Email пользователя
+          example: anna@example.com
+    RegistrationRequest:
+      type: object
+      description: Запрос на регистрацию нового пользователя
+      properties:
+        name:
+          type: string
+          description: Уникальное имя пользователя
+          example: Anna
+          maxLength: 30
+          minLength: 2
+        phone:
+          type: string
+          description: Номер телефона пользователя
+          example: "+79123456789"
+          minLength: 1
+          pattern: "^\\+?[1-9][0-9]{7,14}$"
+        email:
+          type: string
+          description: Уникальный email пользователя
+          example: anna@example.com
+          maxLength: 255
+          minLength: 0
+        wbApiKey:
+          type: string
+          description: Уникальный api ключ Wildberries
+          example: xYjJ9bGci0iJFUzI2NyIs1mtpZCI6I3jIwMjYwNTI2d...
+          maxLength: 500
+          minLength: 0
+      required:
+      - email
+      - name
+      - phone
+      - wbApiKey
+    ChangeShipmentStatusRequest:
+      type: object
+      description: Запрос на обновление статуса отгрузки
+      properties:
+        status:
+          type: string
+          description: Новое значение статуса
+          example: В работе
+          maxLength: 50
+          minLength: 0
+      required:
+      - status
+    ChangeKeyResponse:
+      type: object
+      description: Ответ на обновление api ключа
+      properties:
+        message:
+          type: string
+          description: Сообщение об успешном обновлении
+          example: Wb api key has been successfully updated
+        newKeyLastChars:
+          type: string
+          description: Окончание нового api ключа
+          example: '***DQ4OX0'
+    ChangeKeyRequest:
+      type: object
+      description: Запрос на обновление api ключа
+      properties:
+        wbApiKey:
+          type: string
+          description: Новое значение api ключа
+          example: NC1hZTVjLTcwZDYtODBjMy1kMTA1...
+          maxLength: 500
+          minLength: 0
+      required:
+      - wbApiKey
+    AllShipmentsResponse:
+      type: object
+      description: Ответ на получение отгрузок
+      properties:
+        shipments:
+          type: array
+          description: Список отгрузок
+          items:
+            $ref: "#/components/schemas/ShipmentResponse"
+        size:
+          type: integer
+          format: int32
+          description: Количество отгрузок в ответе
+          example: 1
+        hasNext:
+          type: boolean
+          description: Наличие отгрузок на следующей странице
+          example: false
+    WarehouseResponse:
+      type: object
+      description: Ответ с информацией о складе
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Id склада продавца на Wildberries
+          example: 751703
+        name:
+          type: string
+          description: Название склада продавца на Wildberries
+          example: Казань
+    AllProductsResponse:
+      type: object
+      description: Ответ на получение товаров
+      properties:
+        products:
+          type: array
+          description: Список товаров
+          items:
+            $ref: "#/components/schemas/ProductResponse"
+        size:
+          type: integer
+          format: int32
+          description: Количество товаров в ответе
+          example: 1
+        hasNext:
+          type: boolean
+          description: Наличие товаров на следующей странице
+          example: false
+    ProductResponse:
+      type: object
+      description: Ответ с информацией о товаре
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Id товара
+          example: 10000420
+        title:
+          type: string
+          description: Наименование товара
+          example: Кюлоты палаццо летние
+        barcode:
+          type: string
+          description: Баркод товара
+          example: 2037989779625
+        article:
+          type: string
+          description: Артикул товара
+          example: кюлоты 400 черные
+        size:
+          type: string
+          description: Размер товара
+          example: 46
+        color:
+          type: string
+          description: Цвет товара
+          example: черный
+        photoUrl:
+          type: string
+          description: Ссылка на первое фото товара на Wildberries
+          example: https://basket-11.wbbasket.ru/vol1646/part164680/164680495/images/big/1.webp
+    AllFulfillmentsResponse:
+      type: object
+      description: Ответ на получение фулфилментов
+      properties:
+        fulfillments:
+          type: array
+          description: Список фулфилментов
+          items:
+            $ref: "#/components/schemas/FulfillmentResponse"
+        size:
+          type: integer
+          format: int32
+          description: Количество фулфилментов в ответе
+          example: 1
+        hasNext:
+          type: boolean
+          description: Наличие фулфилментов на следующей странице
+          example: false
+    KeyResponse:
+      type: object
+      description: Ответ с значением api ключа
+      properties:
+        wbApiKey:
+          type: string
+          description: Значение api ключа
+          example: NC1hZTVjLTcwZDYtODBjMy1kMTA1...
+  securitySchemes:
+    TelegramAuth:
+      type: apiKey
+      description: Telegram WebApp initData
+      name: Authorization
+      in: header
+    ApiSecretAuth:
+      type: apiKey
+      description: Секретный ключ API
+      name: X-API-SECRET
+      in: header

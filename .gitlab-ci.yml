@@ -1,0 +1,61 @@
+stages:
+  - build
+  - publish-image
+  - deploy
+
+variables:
+  DOCKER_TLS_CERTDIR: ""
+
+build:
+  stage: build
+  image: gradle:7.6-jdk17
+  script:
+    - cd fulfillment
+    - chmod +x ./gradlew
+    - ./gradlew build -x test
+  artifacts:
+    paths:
+      - fulfillment/build/libs/*.jar
+    expire_in: 1 day
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
+      when: on_success
+    - when: never
+
+publish-image:
+  stage: publish-image
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [ '' ]
+  variables:
+    SERVICE_NAME: fulfillment
+  script:
+    - IMAGE_NAME=$(echo "$CI_REGISTRY_IMAGE/$SERVICE_NAME" | tr '[:upper:]' '[:lower:]')
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "gitlab-ci-token" "${CI_JOB_TOKEN}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - mkdir -p $SERVICE_NAME/build/libs
+    - echo "IMAGE_NAME - "$IMAGE_NAME $SERVICE_NAME
+    - >-
+      /kaniko/executor
+      --context fulfillment
+      --dockerfile fulfillment/Dockerfile
+      --destination $IMAGE_NAME:$CI_COMMIT_BRANCH
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
+      when: on_success
+    - when: never
+
+deploy:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache openssh bash
+    - chmod +x ./deploy.sh
+  script:
+    - IMAGE_NAME=$(echo "$CI_REGISTRY_IMAGE/$SERVICE_NAME" | tr '[:upper:]' '[:lower:]')
+    - ./deploy.sh "$CI_PROJECT_NAME" "$CI_COMMIT_BRANCH" "$CI_COMMIT_BRANCH" "$SSH_DEPLOY_USER@$SSH_DEPLOY_HOST" "$IMAGE_NAME"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "main"'
+      when: on_success
+    - when: never
+

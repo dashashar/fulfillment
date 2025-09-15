@@ -1,0 +1,15 @@
+services:
+  spring-app:
+    build: .
+    container_name: spring-app
+    restart: unless-stopped
+    expose:
+      - "8080"
+    env_file:
+      - /opt/my-project/.env
+    networks:
+      - internal_network
+
+networks:
+  internal_network:
+    external: true

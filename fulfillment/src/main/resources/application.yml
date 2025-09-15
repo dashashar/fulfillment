@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: fulfillment
+
+  web:
+    resources:
+      add-mappings: false
+
+  datasource:
+    url: ${POSTGRES_URL}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.yml
+
+logging:
+  level:
+    root: INFO
+    org.springframework: INFO
+    ru.itis.fulfillment: DEBUG
+  file:
+    name: logs/app.log
+
+springdoc:
+  override-with-generic-response: false
+
+telegram:
+  bot:
+    token: ${TELEGRAM_BOT_TOKEN}
+
+google:
+  spreadsheet:
+    id: ${GOOGLE_SPREADSHEET_ID}
+    sheet:
+      name:
+        fulfillment: ТЗ
+        shipment: Отгрузка
+    secret: ${GOOGLE_SPREADSHEET_SECRET}
+  credentials: ${GCP_SERVICE_ACCOUNT_JSON}
